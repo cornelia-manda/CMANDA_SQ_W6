@@ -1,27 +1,27 @@
 // ============================================================
-// Week 6 Side Quest — One Night Ultimate Werewolf Scroller
+// Week 6 Side Quest — SAVE THE SPIDERS
 // ============================================================
 
 // ------------------------------------------------------------
 // WORLD
 // ------------------------------------------------------------
-const WORLD_LENGTH = 3000;
-const SCROLL_SPEED = 0.8;
+const WORLD_LENGTH = 1500;
+const SCROLL_SPEED = 2.0;
 let scrollY = 0;
 
 // ------------------------------------------------------------
 // PLAYER CONFIGURATION
 // ------------------------------------------------------------
-const PLAYER_SPEED = 3;
-const BULLET_SPEED = 10;
+const PLAYER_SPEED = 6;
+const BULLET_SPEED = 18;
 const SHOOT_COOLDOWN = 12;
 const INVINCIBLE_FRAMES = 90;
 
 // ------------------------------------------------------------
 // ENEMY CONFIGURATION
 // ------------------------------------------------------------
-const ENEMY_SPAWN_RATE = 120;
-const MAX_ENEMIES = 3;
+const ENEMY_SPAWN_RATE = 70;
+const MAX_ENEMIES = 8;
 let spawnTimer = 0;
 
 // ------------------------------------------------------------
@@ -44,9 +44,9 @@ let winSound;
 // SPRITE SHEET CONFIGURATIONS (Week 5 Rules)
 // ------------------------------------------------------------
 const PLAYER_SPRITE = {
-  frameWidth: 64, // Width of one individual frame cell
-  frameHeight: 64, // Height of one individual frame cell
-  numFrames: 4, // Total frames horizontally across your sheet
+  frameWidth: 80, // Width of one individual frame cell (240 / 3 = 80)
+  frameHeight: 64, // Height of one individual frame cell (256 / 4 = 64)
+  numFrames: 3, // Total frames horizontally across your sheet (3 spiders in a row)
   animSpeed: 0.15,
 };
 
@@ -67,8 +67,8 @@ let player = {
   currentFrame: 0,
   direction: { x: 0, y: -1 },
   shootTimer: 0,
-  health: 5,
-  maxHealth: 5,
+  health: 8,
+  maxHealth: 8,
   invincible: false,
   invincibleTimer: 0,
   bounceVX: 0,
@@ -89,18 +89,32 @@ let gameState = STATE_START;
 // preload()
 // ============================================================
 function preload() {
-  // Loaded directly from your root directory instead of data/
-  obstacleData = loadJSON("data/obstacles.json");
+  console.log("Preload starting...");
 
+  // Loaded directly from your root directory instead of data/
+  try {
+    obstacleData = loadJSON("data/obstacles.json");
+    console.log("✓ Loaded obstacles.json");
+  } catch (e) {
+    console.error("Failed to load obstacles.json:", e);
+    obstacleData = { obstacles: [] };
+  }
+
+  // Comment out problematic assets for now
   // Load root theme assets
   bgImage = loadImage("assets/images/background.jpg");
-  playerSheet = loadImage("assets/images/bird.jpeg");
+  console.log("✓ Loaded background.jpg");
+  playerSheet = loadImage("assets/images/spider.png");
+  console.log("✓ Loaded spider.png");
   enemySheet = loadImage("assets/images/enemy-owl.png");
+  console.log("✓ Loaded enemy-owl.png");
 
   // Audio Assets
-  music = loadSound("assets/audio/background-audio.mp3");
-  shootSound = loadSound("assets/audio/jump.mp3"); // Bound to firing projectile action
-  winSound = loadSound("assets/audio/win.mp3");
+  // music = loadSound("assets/audio/background-audio.mp3");
+  // shootSound = loadSound("assets/audio/jump.mp3");
+  // winSound = loadSound("assets/audio/win.mp3");
+
+  console.log("Preload complete!");
 }
 
 // ============================================================
@@ -164,12 +178,12 @@ function drawStartScreen() {
   fill(150, 100, 220);
   textAlign(CENTER, CENTER);
   textSize(36);
-  text("ONE NIGHT ULTIMATE WEREWOLF", width / 2, height / 2 - 40);
+  text("SAVE THE SPIDERS FROM THE OWLS", width / 2, height / 2 - 40);
 
   fill(255);
   textSize(18);
   text(
-    "Click Anywhere on Canvas to Start the Night!",
+    "Click Anywhere on Canvas to Start Saving Spiders!",
     width / 2,
     height / 2 + 10,
   );
@@ -203,14 +217,20 @@ function scrollWorld() {
 
 function drawBackground() {
   if (bgImage && bgImage.width > 1) {
-    let bgY = (scrollY * 0.5) % height;
-    image(bgImage, 0, bgY, width, height);
-    image(bgImage, 0, bgY - height, width, height);
+    // Make background much larger so only a portion shows
+    let bgScale = 3; // 3x larger than canvas
+    let scaledWidth = width * bgScale;
+    let scaledHeight = height * bgScale;
+    let bgY = (-scrollY * 0.5) % scaledHeight;
+    if (bgY > 0) bgY -= scaledHeight;
+
+    image(bgImage, 0, bgY, scaledWidth, scaledHeight);
+    image(bgImage, 0, bgY + scaledHeight, scaledWidth, scaledHeight);
   }
 
-  stroke(255, 255, 255, 20);
+  stroke(255, 255, 255, 0);
   strokeWeight(1);
-  line(0, 70, width, 70);
+  // line(0, 70, width, 70);
   noStroke();
 }
 
@@ -226,18 +246,27 @@ function drawObstacles() {
     let s = o.size;
 
     push();
+    // Draw stone-like obstacle
     let glow = map(sin(frameCount * 0.04 + i), -1, 1, 30, 85);
     noStroke();
-    fill(80, 35, 120, glow);
+    fill(100, 90, 80, glow);
     rect(x - 6, y - 6, s + 12, s + 12, 6);
 
-    fill(25, 20, 35);
+    // Stone texture - gray with darker shading
+    fill(140, 130, 120);
     rect(x, y, s, s, 4);
 
-    stroke(130, 70, 200);
-    strokeWeight(2);
-    line(x + s * 0.3, y + s * 0.2, x + s * 0.7, y + s * 0.8);
-    line(x + s * 0.7, y + s * 0.2, x + s * 0.3, y + s * 0.8);
+    // Add rocky texture with circles
+    fill(110, 100, 90);
+    circle(x + s * 0.3, y + s * 0.3, s * 0.25);
+    circle(x + s * 0.7, y + s * 0.4, s * 0.2);
+    circle(x + s * 0.5, y + s * 0.7, s * 0.22);
+
+    // Shadow/depth
+    stroke(80, 70, 60);
+    strokeWeight(1.5);
+    line(x + s * 0.2, y + s * 0.5, x + s * 0.8, y + s * 0.5);
+    noStroke();
     pop();
   }
 }
@@ -260,7 +289,7 @@ function checkObstaclePlayerCollision() {
     let d = dist(player.x, player.y, closestX, closestY);
 
     if (d < player.r) {
-      player.health--;
+      player.health -= 2;
       player.invincible = true;
       player.invincibleTimer = INVINCIBLE_FRAMES;
 
@@ -357,7 +386,7 @@ function spawnEnemies() {
   enemies.push({
     x: random(30, width - 30),
     y: -25,
-    r: 22,
+    r: 35,
     speed: speed,
     currentFrame: 0,
   });
@@ -406,7 +435,7 @@ function checkEnemyPlayerCollision() {
   for (let i = 0; i < enemies.length; i++) {
     let d = dist(player.x, player.y, enemies[i].x, enemies[i].y);
     if (d < player.r + enemies[i].r - 6) {
-      player.health--;
+      player.health -= 2;
       player.invincible = true;
       player.invincibleTimer = INVINCIBLE_FRAMES;
 
@@ -437,10 +466,18 @@ function checkLevelComplete() {
 }
 
 function drawBullets() {
-  fill(240, 220, 100);
-  noStroke();
+  // Draw webs instead of plain circles
   for (let i = 0; i < bullets.length; i++) {
-    ellipse(bullets[i].x, bullets[i].y, 8);
+    let b = bullets[i];
+    push();
+    stroke(200, 200, 200, 180);
+    strokeWeight(1.5);
+    noFill();
+    // Draw a web-like shape
+    ellipse(b.x, b.y, 10);
+    line(b.x - 5, b.y - 5, b.x + 5, b.y + 5);
+    line(b.x - 5, b.y + 5, b.x + 5, b.y - 5);
+    pop();
   }
 }
 
@@ -482,6 +519,18 @@ function drawPlayer() {
       (player.currentFrame + PLAYER_SPRITE.animSpeed) % PLAYER_SPRITE.numFrames;
     let frameX = floor(player.currentFrame) * PLAYER_SPRITE.frameWidth;
 
+    // Determine which row based on direction
+    let frameY = 0;
+    if (player.direction.y < 0)
+      frameY = 3; // Up
+    else if (player.direction.y > 0)
+      frameY = 0; // Down
+    else if (player.direction.x < 0)
+      frameY = 1; // Left
+    else if (player.direction.x > 0) frameY = 2; // Right
+
+    let spriteY = frameY * PLAYER_SPRITE.frameHeight;
+
     push();
     imageMode(CENTER);
     image(
@@ -491,7 +540,7 @@ function drawPlayer() {
       player.r * 2.5,
       player.r * 2.5,
       frameX,
-      0,
+      spriteY,
       PLAYER_SPRITE.frameWidth,
       PLAYER_SPRITE.frameHeight,
     );
@@ -513,7 +562,7 @@ function drawHUD() {
   fill(255);
   textSize(16);
   textAlign(RIGHT);
-  text("Villagers Saved: " + score, width - 16, 28);
+  text("Spiders Saved: " + score, width - 16, 28);
 
   let barW = 160;
   let barH = 14;
@@ -540,7 +589,7 @@ function drawHUD() {
   fill(40);
   rect(progBarX, progBarY, 4, progBarH, 2);
   fill(150, 100, 220);
-  rect(progBarX, progBarY + progBarH - progFill, 4, progFill, 2);
+  rect(progBarX, progBarY + progFill, 4, progBarH - progFill, 2);
 }
 
 function drawWinScreen() {
@@ -548,13 +597,13 @@ function drawWinScreen() {
   fill(255);
   textAlign(CENTER, CENTER);
   textSize(44);
-  text("Dawn Breaks! You Survived.", width / 2, height / 2 - 30);
+  text("You Made It To Safety!", width / 2, height / 2 - 30);
   fill(180);
   textSize(16);
   text("Final Score: " + score, width / 2, height / 2 + 15);
   textSize(14);
   fill(100);
-  text("Press R to start a new night", width / 2, height / 2 + 55);
+  text("Press R to save more spiders", width / 2, height / 2 + 55);
 }
 
 // ------------------------------------------------------------
@@ -565,7 +614,7 @@ function drawGameOver() {
   fill(220, 60, 60);
   textAlign(CENTER, CENTER);
   textSize(44);
-  text("The Werewolves Won", width / 2, height / 2 - 30);
+  text("The Owls Won", width / 2, height / 2 - 30);
   fill(180);
   textSize(16);
   text("Score: " + score, width / 2, height / 2 + 15);
