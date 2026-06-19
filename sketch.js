@@ -44,15 +44,15 @@ let winSound;
 // SPRITE SHEET CONFIGURATIONS (Week 5 Rules)
 // ------------------------------------------------------------
 const PLAYER_SPRITE = {
-  frameWidth: 64, // Width of one individual frame cell
-  frameHeight: 64, // Height of one individual frame cell
-  numFrames: 4, // Total frames horizontally across your sheet
+  frameWidth: 64,
+  frameHeight: 64,
+  numFrames: 4,
   animSpeed: 0.15,
 };
 
 const ENEMY_SPRITE = {
-  frameWidth: 64, // Width of one individual owl cell
-  frameHeight: 64, // Height of one individual owl cell
+  frameWidth: 64,
+  frameHeight: 64,
   numFrames: 4,
   animSpeed: 0.1,
 };
@@ -79,19 +79,22 @@ let bullets = [];
 let enemies = [];
 
 let score = 0;
+
+// Game states including a START screen to handle browser audio locks safely
+const STATE_START = "start";
 const STATE_PLAY = "play";
 const STATE_WIN = "win";
 const STATE_OVER = "over";
-let gameState = STATE_PLAY;
+let gameState = STATE_START;
 
 // ============================================================
 // preload()
 // ============================================================
 function preload() {
-  // Obstacles are inside the data folder
+  // Pull obstacle configuration from your data folder layout
   obstacleData = loadJSON("data/obstacles.json");
 
-  // All multimedia assets are directly in your root project directory
+  // Load files matching your root directory filenames exactly
   bgImage = loadImage("background.jpg");
   playerSheet = loadImage("bird.jpeg");
   enemySheet = loadImage("enemy-owl.png");
@@ -107,22 +110,20 @@ function preload() {
 function setup() {
   createCanvas(800, 450);
 
-  // Build obstacles array from JSON data
-  if (obstacleData && obstacleData.obstacles) {
+  // Safely fill our obstacles array from JSON data keys
+  if (
+    obstacleData &&
+    obstacleData.obstacles &&
+    Array.isArray(obstacleData.obstacles)
+  ) {
     for (let i = 0; i < obstacleData.obstacles.length; i++) {
       let o = obstacleData.obstacles[i];
       obstacles.push({
-        x: o.x,
-        worldY: o.worldY,
-        size: o.size,
+        x: o.x || 200,
+        worldY: o.worldY || -300,
+        size: o.size || 50,
       });
     }
-  }
-
-  // Loop background music ambiance
-  if (music) {
-    music.loop();
-    music.setVolume(0.4);
   }
 }
 
@@ -132,7 +133,9 @@ function setup() {
 function draw() {
   background(15, 15, 25);
 
-  if (gameState === STATE_PLAY) {
+  if (gameState === STATE_START) {
+    drawStartScreen();
+  } else if (gameState === STATE_PLAY) {
     scrollWorld();
     drawBackground();
     drawObstacles();
@@ -157,6 +160,42 @@ function draw() {
   }
 }
 
+function drawStartScreen() {
+  background(20, 20, 35);
+  fill(150, 100, 220);
+  textAlign(CENTER);
+  textSize(36);
+  text("ONE NIGHT ULTIMATE WEREWOLF", width / 2, height / 2 - 40);
+
+  fill(255);
+  textSize(18);
+  text(
+    "Click Anywhere on Canvas to Begin the Night",
+    width / 2,
+    height / 2 + 10,
+  );
+
+  fill(120);
+  textSize(13);
+  textFont("monospace");
+  text(
+    "Controls: WASD / Arrows to Move • Space to Shoot",
+    width / 2,
+    height / 2 + 60,
+  );
+}
+
+function mousePressed() {
+  // If user clicks while on start screen, activate music safely and play
+  if (gameState === STATE_START) {
+    gameState = STATE_PLAY;
+    if (music) {
+      music.loop();
+      music.setVolume(0.4);
+    }
+  }
+}
+
 function scrollWorld() {
   if (scrollY < WORLD_LENGTH) {
     scrollY += SCROLL_SPEED;
@@ -164,10 +203,11 @@ function scrollWorld() {
 }
 
 function drawBackground() {
-  // Vertically tile the background image based on scrolling progress
-  let bgY = (scrollY * 0.5) % height;
-  image(bgImage, 0, bgY, width, height);
-  image(bgImage, 0, bgY - height, width, height);
+  if (bgImage) {
+    let bgY = (scrollY * 0.5) % height;
+    image(bgImage, 0, bgY, width, height);
+    image(bgImage, 0, bgY - height, width, height);
+  }
 
   stroke(255, 255, 255, 20);
   strokeWeight(1);
@@ -187,7 +227,6 @@ function drawObstacles() {
     let s = o.size;
 
     push();
-    // Glowing purple forest barriers to match the Werewolf aesthetic
     let glow = map(sin(frameCount * 0.04 + i), -1, 1, 30, 85);
     noStroke();
     fill(80, 35, 120, glow);
@@ -407,50 +446,52 @@ function drawEnemies() {
   for (let i = 0; i < enemies.length; i++) {
     let e = enemies[i];
 
-    // Process step animation for Owl Sheet
-    e.currentFrame =
-      (e.currentFrame + ENEMY_SPRITE.animSpeed) % ENEMY_SPRITE.numFrames;
-    let frameX = floor(e.currentFrame) * ENEMY_SPRITE.frameWidth;
+    if (enemySheet) {
+      e.currentFrame =
+        (e.currentFrame + ENEMY_SPRITE.animSpeed) % ENEMY_SPRITE.numFrames;
+      let frameX = floor(e.currentFrame) * ENEMY_SPRITE.frameWidth;
 
-    push();
-    imageMode(CENTER);
-    image(
-      enemySheet,
-      e.x,
-      e.y,
-      e.r * 2.5,
-      e.r * 2.5,
-      frameX,
-      0,
-      ENEMY_SPRITE.frameWidth,
-      ENEMY_SPRITE.frameHeight,
-    );
-    pop();
+      push();
+      imageMode(CENTER);
+      image(
+        enemySheet,
+        e.x,
+        e.y,
+        e.r * 2.5,
+        e.r * 2.5,
+        frameX,
+        0,
+        ENEMY_SPRITE.frameWidth,
+        ENEMY_SPRITE.frameHeight,
+      );
+      pop();
+    }
   }
 }
 
 function drawPlayer() {
   if (player.invincible && floor(player.invincibleTimer / 6) % 2 === 0) return;
 
-  // Process animation configuration for Bird character
-  player.currentFrame =
-    (player.currentFrame + PLAYER_SPRITE.animSpeed) % PLAYER_SPRITE.numFrames;
-  let frameX = floor(player.currentFrame) * PLAYER_SPRITE.frameWidth;
+  if (playerSheet) {
+    player.currentFrame =
+      (player.currentFrame + PLAYER_SPRITE.animSpeed) % PLAYER_SPRITE.numFrames;
+    let frameX = floor(player.currentFrame) * PLAYER_SPRITE.frameWidth;
 
-  push();
-  imageMode(CENTER);
-  image(
-    playerSheet,
-    player.x,
-    player.y,
-    player.r * 2.5,
-    player.r * 2.5,
-    frameX,
-    0,
-    PLAYER_SPRITE.frameWidth,
-    PLAYER_SPRITE.frameHeight,
-  );
-  pop();
+    push();
+    imageMode(CENTER);
+    image(
+      playerSheet,
+      player.x,
+      player.y,
+      player.r * 2.5,
+      player.r * 2.5,
+      frameX,
+      0,
+      PLAYER_SPRITE.frameWidth,
+      PLAYER_SPRITE.frameHeight,
+    );
+    pop();
+  }
 }
 
 function drawHUD() {
@@ -483,7 +524,6 @@ function drawHUD() {
   fill(healthColour);
   rect(barX, barY, fillW, barH, 4);
 
-  // Level progression tracking scroller
   let progBarX = width - 6;
   let progBarH = height - 40;
   let progBarY = 20;
@@ -524,7 +564,11 @@ function drawGameOver() {
 }
 
 function keyPressed() {
-  if ((key === "r" || key === "R") && gameState !== STATE_PLAY) {
+  if (
+    (key === "r" || key === "R") &&
+    gameState !== STATE_PLAY &&
+    gameState !== STATE_START
+  ) {
     gameState = STATE_PLAY;
     score = 0;
     scrollY = 0;
