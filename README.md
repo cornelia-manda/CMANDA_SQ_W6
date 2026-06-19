@@ -2,6 +2,8 @@
 
 ## Setup and Interaction Instructions
 
+Open the playable link on Google Chrome and click to start playing!!
+
 - **Move Character**: Use the `W`/`A`/`S`/`D` keys or the standard `Arrow Keys`.
 - **Shoot/Action**: Press the `Spacebar` to fire web projectiles in the direction you are facing.
 - **Restart**: Press `R` to restart after a Victory or a Game Over state screen is reached.
