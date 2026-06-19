@@ -1,0 +1,10 @@
+{
+  "obstacles": [
+    { "x": 150, "worldY": -300, "size": 50 },
+    { "x": 550, "worldY": -650, "size": 60 },
+    { "x": 300, "worldY": -1100, "size": 45 },
+    { "x": 650, "worldY": -1600, "size": 55 },
+    { "x": 200, "worldY": -2100, "size": 70 },
+    { "x": 450, "worldY": -2600, "size": 50 }
+  ]
+}
