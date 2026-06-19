@@ -3,48 +3,37 @@
 // ============================================================
 
 // ------------------------------------------------------------
-// WORLD
+// WORLD & SPEED CONFIGURATION
 // ------------------------------------------------------------
 const WORLD_LENGTH = 3000;
 const SCROLL_SPEED = 0.8;
 let scrollY = 0;
 
-// ------------------------------------------------------------
-// PLAYER CONFIGURATION
-// ------------------------------------------------------------
 const PLAYER_SPEED = 3;
 const BULLET_SPEED = 10;
 const SHOOT_COOLDOWN = 12;
 const INVINCIBLE_FRAMES = 90;
 
-// ------------------------------------------------------------
-// ENEMY CONFIGURATION
-// ------------------------------------------------------------
 const ENEMY_SPAWN_RATE = 120;
 const MAX_ENEMIES = 3;
 let spawnTimer = 0;
 
 // ------------------------------------------------------------
-// DATA & ASSETS
+// DATA & ASSET ENTITIES
 // ------------------------------------------------------------
 let obstacleData;
 let obstacles = [];
 
-// Visual Assets
 let bgImage;
 let playerSheet;
 let enemySheet;
 
-// Sound Assets
 let music;
 let shootSound;
 let winSound;
 
-// Audio loading state tracker
-let audioLoaded = false;
-
 // ------------------------------------------------------------
-// SPRITE SHEET CONFIGURATIONS (Week 5 Rules)
+// SPRITE SHEET FRAME MATRIX CONFIGURATION (Week 5 Rules)
 // ------------------------------------------------------------
 const PLAYER_SPRITE = {
   frameWidth: 64,
@@ -61,7 +50,7 @@ const ENEMY_SPRITE = {
 };
 
 // ------------------------------------------------------------
-// STATE ENTITIES
+// GAME STATE PROPERTIES
 // ------------------------------------------------------------
 let player = {
   x: 400,
@@ -82,7 +71,6 @@ let bullets = [];
 let enemies = [];
 let score = 0;
 
-// Game states
 const STATE_START = "start";
 const STATE_PLAY = "play";
 const STATE_WIN = "win";
@@ -93,29 +81,45 @@ let gameState = STATE_START;
 // preload()
 // ============================================================
 function preload() {
-  // Load JSON safely
-  obstacleData = loadJSON("data/obstacles.json");
+  // Safely load the JSON layout from your data directory
+  try {
+    obstacleData = loadJSON("data/obstacles.json");
+  } catch (e) {
+    console.log("JSON loading skipped, running default obstacles.");
+  }
 
-  // Load images directly from root folder
-  bgImage = loadImage("background.jpg");
-  playerSheet = loadImage("bird.jpeg");
-  enemySheet = loadImage("enemy-owl.png");
+  // Load all images directly from your root directory
+  bgImage = loadImage(
+    "background.jpg",
+    () => {},
+    () => console.log("Missing background.jpg"),
+  );
+  playerSheet = loadImage(
+    "bird.jpeg",
+    () => {},
+    () => console.log("Missing bird.jpeg"),
+  );
+  enemySheet = loadImage(
+    "enemy-owl.png",
+    () => {},
+    () => console.log("Missing enemy-owl.png"),
+  );
 
-  // Safely load sounds with success and error callbacks to prevent hard crashes
-  music = loadSound("background-audio.mp3", soundSuccess, soundError);
-  shootSound = loadSound("jump.mp3");
-  winSound = loadSound("win.mp3");
-}
-
-function soundSuccess() {
-  console.log("Audio files verified and loaded successfully!");
-  audioLoaded = true;
-}
-
-function soundError(err) {
-  console.error(
-    "Audio failed to load safely, running in silent fallback mode.",
-    err,
+  // Load all audio files directly from your root directory with safety loops
+  music = loadSound(
+    "background-audio.mp3",
+    () => {},
+    () => console.log("Music file omitted/not found"),
+  );
+  shootSound = loadSound(
+    "jump.mp3",
+    () => {},
+    () => {},
+  );
+  winSound = loadSound(
+    "win.mp3",
+    () => {},
+    () => {},
   );
 }
 
@@ -125,7 +129,7 @@ function soundError(err) {
 function setup() {
   createCanvas(800, 450);
 
-  // Parse obstacles out of loaded JSON
+  // Safely extract coordinates out of your data file
   if (
     obstacleData &&
     obstacleData.obstacles &&
@@ -139,6 +143,13 @@ function setup() {
         size: o.size || 50,
       });
     }
+  } else {
+    // Standard level generation fallback if the JSON is completely empty or missing
+    obstacles = [
+      { x: 200, worldY: -300, size: 50 },
+      { x: 600, worldY: -700, size: 60 },
+      { x: 400, worldY: -1200, size: 50 },
+    ];
   }
 }
 
@@ -146,7 +157,7 @@ function setup() {
 // draw()
 // ============================================================
 function draw() {
-  background(20, 20, 30); // Deep twilight background fallback
+  background(20, 20, 30);
 
   if (gameState === STATE_START) {
     drawStartScreen();
@@ -183,32 +194,25 @@ function drawStartScreen() {
 
   fill(255);
   textSize(18);
-  text("Click Anywhere to Awaken", width / 2, height / 2 + 10);
+  text("Click Anywhere inside this box to Start!", width / 2, height / 2 + 10);
 
   fill(140);
   textSize(13);
   textFont("monospace");
-  text(
-    "Controls: WASD / Arrows to Move • Space to Shoot",
-    width / 2,
-    height / 2 + 65,
-  );
+  text("WASD / Arrows to Move • Spacebar to Shoot", width / 2, height / 2 + 65);
 }
 
 function mousePressed() {
   if (gameState === STATE_START) {
     gameState = STATE_PLAY;
-    // Engage the music object only after user interaction confirmation
+    // Safely attempt music triggering
     if (music && typeof music.loop === "function") {
       try {
-        userStartAudio(); // Forces modern browser engine audio context to unblock
+        userStartAudio();
         music.loop();
         music.setVolume(0.3);
       } catch (e) {
-        console.warn(
-          "Audio Context block detected. Continuing safely without music.",
-          e,
-        );
+        console.log("Audio skipped cleanly until unblocked.");
       }
     }
   }
@@ -221,10 +225,16 @@ function scrollWorld() {
 }
 
 function drawBackground() {
-  if (bgImage) {
+  if (bgImage && bgImage.width > 1) {
     let bgY = (scrollY * 0.5) % height;
     image(bgImage, 0, bgY, width, height);
     image(bgImage, 0, bgY - height, width, height);
+  } else {
+    // Visual placeholder if image isn't loaded yet
+    stroke(40, 40, 60);
+    for (let i = 0; i < height; i += 40) {
+      line(0, i + (scrollY % 40), width, i + (scrollY % 40));
+    }
   }
 
   stroke(255, 255, 255, 20);
@@ -363,6 +373,9 @@ function updateBullets() {
   }
 }
 
+// ------------------------------------------------------------
+// ENEMIES & COLLISION LOOPS
+// ------------------------------------------------------------
 function spawnEnemies() {
   if (enemies.length >= MAX_ENEMIES) return;
 
@@ -452,6 +465,9 @@ function checkLevelComplete() {
   }
 }
 
+// ------------------------------------------------------------
+// RENDER COMPONENT FUNCTIONS
+// ------------------------------------------------------------
 function drawBullets() {
   fill(240, 220, 100);
   noStroke();
@@ -484,8 +500,7 @@ function drawEnemies() {
       );
       pop();
     } else {
-      // Fallback shape if asset is processing
-      fill(240, 100, 100);
+      fill(255, 100, 100);
       ellipse(e.x, e.y, e.r * 2);
     }
   }
@@ -514,8 +529,7 @@ function drawPlayer() {
     );
     pop();
   } else {
-    // Fallback shape if asset is processing
-    fill(100, 240, 200);
+    fill(100, 230, 210);
     ellipse(player.x, player.y, player.r * 2);
   }
 }
