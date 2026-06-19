@@ -40,6 +40,9 @@ let music;
 let shootSound;
 let winSound;
 
+// Audio loading state tracker
+let audioLoaded = false;
+
 // ------------------------------------------------------------
 // SPRITE SHEET CONFIGURATIONS (Week 5 Rules)
 // ------------------------------------------------------------
@@ -77,10 +80,9 @@ let player = {
 
 let bullets = [];
 let enemies = [];
-
 let score = 0;
 
-// Game states including a START screen to handle browser audio locks safely
+// Game states
 const STATE_START = "start";
 const STATE_PLAY = "play";
 const STATE_WIN = "win";
@@ -91,17 +93,30 @@ let gameState = STATE_START;
 // preload()
 // ============================================================
 function preload() {
-  // Pull obstacle configuration from your data folder layout
+  // Load JSON safely
   obstacleData = loadJSON("data/obstacles.json");
 
-  // Load files matching your root directory filenames exactly
+  // Load images directly from root folder
   bgImage = loadImage("background.jpg");
   playerSheet = loadImage("bird.jpeg");
   enemySheet = loadImage("enemy-owl.png");
 
-  music = loadSound("background-audio.mp3");
+  // Safely load sounds with success and error callbacks to prevent hard crashes
+  music = loadSound("background-audio.mp3", soundSuccess, soundError);
   shootSound = loadSound("jump.mp3");
   winSound = loadSound("win.mp3");
+}
+
+function soundSuccess() {
+  console.log("Audio files verified and loaded successfully!");
+  audioLoaded = true;
+}
+
+function soundError(err) {
+  console.error(
+    "Audio failed to load safely, running in silent fallback mode.",
+    err,
+  );
 }
 
 // ============================================================
@@ -110,7 +125,7 @@ function preload() {
 function setup() {
   createCanvas(800, 450);
 
-  // Safely fill our obstacles array from JSON data keys
+  // Parse obstacles out of loaded JSON
   if (
     obstacleData &&
     obstacleData.obstacles &&
@@ -131,7 +146,7 @@ function setup() {
 // draw()
 // ============================================================
 function draw() {
-  background(15, 15, 25);
+  background(20, 20, 30); // Deep twilight background fallback
 
   if (gameState === STATE_START) {
     drawStartScreen();
@@ -161,37 +176,40 @@ function draw() {
 }
 
 function drawStartScreen() {
-  background(20, 20, 35);
   fill(150, 100, 220);
-  textAlign(CENTER);
+  textAlign(CENTER, CENTER);
   textSize(36);
   text("ONE NIGHT ULTIMATE WEREWOLF", width / 2, height / 2 - 40);
 
   fill(255);
   textSize(18);
-  text(
-    "Click Anywhere on Canvas to Begin the Night",
-    width / 2,
-    height / 2 + 10,
-  );
+  text("Click Anywhere to Awaken", width / 2, height / 2 + 10);
 
-  fill(120);
+  fill(140);
   textSize(13);
   textFont("monospace");
   text(
     "Controls: WASD / Arrows to Move • Space to Shoot",
     width / 2,
-    height / 2 + 60,
+    height / 2 + 65,
   );
 }
 
 function mousePressed() {
-  // If user clicks while on start screen, activate music safely and play
   if (gameState === STATE_START) {
     gameState = STATE_PLAY;
-    if (music) {
-      music.loop();
-      music.setVolume(0.4);
+    // Engage the music object only after user interaction confirmation
+    if (music && typeof music.loop === "function") {
+      try {
+        userStartAudio(); // Forces modern browser engine audio context to unblock
+        music.loop();
+        music.setVolume(0.3);
+      } catch (e) {
+        console.warn(
+          "Audio Context block detected. Continuing safely without music.",
+          e,
+        );
+      }
     }
   }
 }
@@ -275,7 +293,7 @@ function checkObstaclePlayerCollision() {
 
       if (player.health <= 0) {
         gameState = STATE_OVER;
-        if (music) music.stop();
+        if (music && typeof music.stop === "function") music.stop();
       }
       break;
     }
@@ -325,7 +343,7 @@ function handleInput() {
       vy: player.direction.y * BULLET_SPEED,
     });
     player.shootTimer = SHOOT_COOLDOWN;
-    if (shootSound) shootSound.play();
+    if (shootSound && typeof shootSound.play === "function") shootSound.play();
   }
 }
 
@@ -410,7 +428,7 @@ function checkEnemyPlayerCollision() {
 
       if (player.health <= 0) {
         gameState = STATE_OVER;
-        if (music) music.stop();
+        if (music && typeof music.stop === "function") music.stop();
       }
       break;
     }
@@ -429,8 +447,8 @@ function updateInvincibility() {
 function checkLevelComplete() {
   if (scrollY >= WORLD_LENGTH) {
     gameState = STATE_WIN;
-    if (winSound) winSound.play();
-    if (music) music.stop();
+    if (winSound && typeof winSound.play === "function") winSound.play();
+    if (music && typeof music.stop === "function") music.stop();
   }
 }
 
@@ -446,7 +464,7 @@ function drawEnemies() {
   for (let i = 0; i < enemies.length; i++) {
     let e = enemies[i];
 
-    if (enemySheet) {
+    if (enemySheet && enemySheet.width > 1) {
       e.currentFrame =
         (e.currentFrame + ENEMY_SPRITE.animSpeed) % ENEMY_SPRITE.numFrames;
       let frameX = floor(e.currentFrame) * ENEMY_SPRITE.frameWidth;
@@ -465,6 +483,10 @@ function drawEnemies() {
         ENEMY_SPRITE.frameHeight,
       );
       pop();
+    } else {
+      // Fallback shape if asset is processing
+      fill(240, 100, 100);
+      ellipse(e.x, e.y, e.r * 2);
     }
   }
 }
@@ -472,7 +494,7 @@ function drawEnemies() {
 function drawPlayer() {
   if (player.invincible && floor(player.invincibleTimer / 6) % 2 === 0) return;
 
-  if (playerSheet) {
+  if (playerSheet && playerSheet.width > 1) {
     player.currentFrame =
       (player.currentFrame + PLAYER_SPRITE.animSpeed) % PLAYER_SPRITE.numFrames;
     let frameX = floor(player.currentFrame) * PLAYER_SPRITE.frameWidth;
@@ -491,6 +513,10 @@ function drawPlayer() {
       PLAYER_SPRITE.frameHeight,
     );
     pop();
+  } else {
+    // Fallback shape if asset is processing
+    fill(100, 240, 200);
+    ellipse(player.x, player.y, player.r * 2);
   }
 }
 
@@ -538,7 +564,7 @@ function drawHUD() {
 function drawWinScreen() {
   background(10, 25, 15);
   fill(255);
-  textAlign(CENTER);
+  textAlign(CENTER, CENTER);
   textSize(44);
   text("Dawn Breaks! You Survived.", width / 2, height / 2 - 30);
   fill(180);
@@ -552,7 +578,7 @@ function drawWinScreen() {
 function drawGameOver() {
   background(25, 10, 10);
   fill(220, 60, 60);
-  textAlign(CENTER);
+  textAlign(CENTER, CENTER);
   textSize(44);
   text("The Werewolves Won", width / 2, height / 2 - 30);
   fill(180);
@@ -579,6 +605,6 @@ function keyPressed() {
     player.y = 370;
     player.health = player.maxHealth;
     player.invincible = false;
-    if (music) music.loop();
+    if (music && typeof music.loop === "function") music.loop();
   }
 }
