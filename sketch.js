@@ -90,17 +90,17 @@ let gameState = STATE_START;
 // ============================================================
 function preload() {
   // Loaded directly from your root directory instead of data/
-  obstacleData = loadJSON("obstacles.json");
+  obstacleData = loadJSON("data/obstacles.json");
 
   // Load root theme assets
-  bgImage = loadImage("background.jpg");
-  playerSheet = loadImage("bird.jpeg");
-  enemySheet = loadImage("enemy-owl.png");
+  bgImage = loadImage("assets/images/background.jpg");
+  playerSheet = loadImage("assets/images/bird.jpeg");
+  enemySheet = loadImage("assets/images/enemy-owl.png");
 
   // Audio Assets
-  music = loadSound("background-audio.mp3");
-  shootSound = loadSound("jump.mp3"); // Bound to firing projectile action
-  winSound = loadSound("win.mp3");
+  music = loadSound("assets/audio/background-audio.mp3");
+  shootSound = loadSound("assets/audio/jump.mp3"); // Bound to firing projectile action
+  winSound = loadSound("assets/audio/win.mp3");
 }
 
 // ============================================================
