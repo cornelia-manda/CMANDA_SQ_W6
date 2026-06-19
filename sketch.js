@@ -81,7 +81,7 @@ let gameState = STATE_START;
 // preload()
 // ============================================================
 function preload() {
-  // Looks inside your data/ subfolder
+  // Pull data from your nested directory path layout
   obstacleData = loadJSON("data/obstacles.json");
 
   // Load graphic assets from root
@@ -101,7 +101,6 @@ function preload() {
 function setup() {
   createCanvas(800, 450);
 
-  // Safely extract coordinates out of your data file properties
   if (
     obstacleData &&
     obstacleData.obstacles &&
@@ -116,7 +115,6 @@ function setup() {
       });
     }
   } else {
-    // Layout template fallback values structure layout
     obstacles = [
       { x: 200, worldY: -300, size: 50 },
       { x: 600, worldY: -700, size: 60 },
