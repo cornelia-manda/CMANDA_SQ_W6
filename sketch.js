@@ -81,46 +81,18 @@ let gameState = STATE_START;
 // preload()
 // ============================================================
 function preload() {
-  // Safely load the JSON layout from your data directory
-  try {
-    obstacleData = loadJSON("data/obstacles.json");
-  } catch (e) {
-    console.log("JSON loading skipped, running default obstacles.");
-  }
+  // Looks inside your data/ subfolder
+  obstacleData = loadJSON("data/obstacles.json");
 
-  // Load all images directly from your root directory
-  bgImage = loadImage(
-    "background.jpg",
-    () => {},
-    () => console.log("Missing background.jpg"),
-  );
-  playerSheet = loadImage(
-    "bird.jpeg",
-    () => {},
-    () => console.log("Missing bird.jpeg"),
-  );
-  enemySheet = loadImage(
-    "enemy-owl.png",
-    () => {},
-    () => console.log("Missing enemy-owl.png"),
-  );
+  // Load graphic assets from root
+  bgImage = loadImage("background.jpg");
+  playerSheet = loadImage("bird.jpeg");
+  enemySheet = loadImage("enemy-owl.png");
 
-  // Load all audio files directly from your root directory with safety loops
-  music = loadSound(
-    "background-audio.mp3",
-    () => {},
-    () => console.log("Music file omitted/not found"),
-  );
-  shootSound = loadSound(
-    "jump.mp3",
-    () => {},
-    () => {},
-  );
-  winSound = loadSound(
-    "win.mp3",
-    () => {},
-    () => {},
-  );
+  // Load sound tracks from root
+  music = loadSound("background-audio.mp3");
+  shootSound = loadSound("jump.mp3");
+  winSound = loadSound("win.mp3");
 }
 
 // ============================================================
@@ -129,7 +101,7 @@ function preload() {
 function setup() {
   createCanvas(800, 450);
 
-  // Safely extract coordinates out of your data file
+  // Safely extract coordinates out of your data file properties
   if (
     obstacleData &&
     obstacleData.obstacles &&
@@ -144,7 +116,7 @@ function setup() {
       });
     }
   } else {
-    // Standard level generation fallback if the JSON is completely empty or missing
+    // Layout template fallback values structure layout
     obstacles = [
       { x: 200, worldY: -300, size: 50 },
       { x: 600, worldY: -700, size: 60 },
@@ -194,7 +166,11 @@ function drawStartScreen() {
 
   fill(255);
   textSize(18);
-  text("Click Anywhere inside this box to Start!", width / 2, height / 2 + 10);
+  text(
+    "Click Anywhere on the Canvas to Start the Night!",
+    width / 2,
+    height / 2 + 10,
+  );
 
   fill(140);
   textSize(13);
@@ -205,14 +181,13 @@ function drawStartScreen() {
 function mousePressed() {
   if (gameState === STATE_START) {
     gameState = STATE_PLAY;
-    // Safely attempt music triggering
     if (music && typeof music.loop === "function") {
       try {
         userStartAudio();
         music.loop();
         music.setVolume(0.3);
       } catch (e) {
-        console.log("Audio skipped cleanly until unblocked.");
+        console.log("Audio unblocked.");
       }
     }
   }
@@ -230,7 +205,6 @@ function drawBackground() {
     image(bgImage, 0, bgY, width, height);
     image(bgImage, 0, bgY - height, width, height);
   } else {
-    // Visual placeholder if image isn't loaded yet
     stroke(40, 40, 60);
     for (let i = 0; i < height; i += 40) {
       line(0, i + (scrollY % 40), width, i + (scrollY % 40));
@@ -373,9 +347,6 @@ function updateBullets() {
   }
 }
 
-// ------------------------------------------------------------
-// ENEMIES & COLLISION LOOPS
-// ------------------------------------------------------------
 function spawnEnemies() {
   if (enemies.length >= MAX_ENEMIES) return;
 
@@ -465,9 +436,6 @@ function checkLevelComplete() {
   }
 }
 
-// ------------------------------------------------------------
-// RENDER COMPONENT FUNCTIONS
-// ------------------------------------------------------------
 function drawBullets() {
   fill(240, 220, 100);
   noStroke();
