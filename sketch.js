@@ -81,15 +81,14 @@ let gameState = STATE_START;
 // preload()
 // ============================================================
 function preload() {
-  // Pull data from your nested directory path layout
+  // Pulling from your data folder safely
   obstacleData = loadJSON("data/obstacles.json");
 
-  // Load graphic assets from root
+  // Load visual and audio files directly from your root project folder
   bgImage = loadImage("background.jpg");
   playerSheet = loadImage("bird.jpeg");
   enemySheet = loadImage("enemy-owl.png");
 
-  // Load sound tracks from root
   music = loadSound("background-audio.mp3");
   shootSound = loadSound("jump.mp3");
   winSound = loadSound("win.mp3");
@@ -185,7 +184,7 @@ function mousePressed() {
         music.loop();
         music.setVolume(0.3);
       } catch (e) {
-        console.log("Audio unblocked.");
+        console.log("Audio session ongoing.");
       }
     }
   }
