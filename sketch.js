@@ -38,6 +38,7 @@ let enemySheet;
 // Sound Assets
 let music;
 let shootSound;
+let hitSound;
 let winSound;
 
 // ------------------------------------------------------------
@@ -110,9 +111,10 @@ function preload() {
   console.log("✓ Loaded enemy-owl.png");
 
   // Audio Assets
-  // music = loadSound("assets/audio/background-audio.mp3");
-  // shootSound = loadSound("assets/audio/jump.mp3");
-  // winSound = loadSound("assets/audio/win.mp3");
+  music = loadSound("assets/audio/background-audio.mp3");
+  shootSound = loadSound("assets/audio/shoot.mp3");
+  hitSound = loadSound("assets/audio/hit.mp3");
+  winSound = loadSound("assets/audio/win.mp3");
 
   console.log("Preload complete!");
 }
@@ -292,6 +294,7 @@ function checkObstaclePlayerCollision() {
       player.health -= 2;
       player.invincible = true;
       player.invincibleTimer = INVINCIBLE_FRAMES;
+      if (hitSound) hitSound.play();
 
       let dx = player.x - o.x;
       let dy = player.y - screenY;
@@ -438,6 +441,7 @@ function checkEnemyPlayerCollision() {
       player.health -= 2;
       player.invincible = true;
       player.invincibleTimer = INVINCIBLE_FRAMES;
+      if (hitSound) hitSound.play();
 
       if (player.health <= 0) {
         gameState = STATE_OVER;
