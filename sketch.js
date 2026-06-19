@@ -3,54 +3,62 @@
 // ============================================================
 
 // ------------------------------------------------------------
-// WORLD & SPEED CONFIGURATION
+// WORLD
 // ------------------------------------------------------------
 const WORLD_LENGTH = 3000;
 const SCROLL_SPEED = 0.8;
 let scrollY = 0;
 
+// ------------------------------------------------------------
+// PLAYER CONFIGURATION
+// ------------------------------------------------------------
 const PLAYER_SPEED = 3;
 const BULLET_SPEED = 10;
 const SHOOT_COOLDOWN = 12;
 const INVINCIBLE_FRAMES = 90;
 
+// ------------------------------------------------------------
+// ENEMY CONFIGURATION
+// ------------------------------------------------------------
 const ENEMY_SPAWN_RATE = 120;
 const MAX_ENEMIES = 3;
 let spawnTimer = 0;
 
 // ------------------------------------------------------------
-// DATA & ASSET ENTITIES
+// DATA & ASSETS
 // ------------------------------------------------------------
 let obstacleData;
 let obstacles = [];
 
+// Visual Assets
 let bgImage;
 let playerSheet;
 let enemySheet;
 
+// Sound Assets
 let music;
 let shootSound;
 let winSound;
 
 // ------------------------------------------------------------
-// SPRITE SHEET FRAME MATRIX CONFIGURATION (Week 5 Rules)
+// SPRITE SHEET CONFIGURATIONS (Week 5 Rules)
 // ------------------------------------------------------------
 const PLAYER_SPRITE = {
-  frameWidth: 64,
-  frameHeight: 64,
-  numFrames: 4,
+  frameWidth: 64, // Width of one individual frame cell
+  frameHeight: 64, // Height of one individual frame cell
+  numFrames: 4, // Total frames horizontally across your sheet
   animSpeed: 0.15,
 };
 
 const ENEMY_SPRITE = {
-  frameWidth: 64,
-  frameHeight: 64,
+  frameWidth: 64, // Width of one individual owl cell
+  frameHeight: 64, // Height of one individual owl cell
   numFrames: 4,
   animSpeed: 0.1,
 };
 
 // ------------------------------------------------------------
-// GAME STATE PROPERTIES
+// STATE ENTITIES
 // ------------------------------------------------------------
 let player = {
   x: 400,
@@ -69,8 +77,8 @@ let player = {
 
 let bullets = [];
 let enemies = [];
-let score = 0;
 
+let score = 0;
 const STATE_START = "start";
 const STATE_PLAY = "play";
 const STATE_WIN = "win";
@@ -81,16 +89,17 @@ let gameState = STATE_START;
 // preload()
 // ============================================================
 function preload() {
-  // Pulling from your data folder safely
-  obstacleData = loadJSON("data/obstacles.json");
+  // Loaded directly from your root directory instead of data/
+  obstacleData = loadJSON("obstacles.json");
 
-  // Load visual and audio files directly from your root project folder
+  // Load root theme assets
   bgImage = loadImage("background.jpg");
   playerSheet = loadImage("bird.jpeg");
   enemySheet = loadImage("enemy-owl.png");
 
+  // Audio Assets
   music = loadSound("background-audio.mp3");
-  shootSound = loadSound("jump.mp3");
+  shootSound = loadSound("jump.mp3"); // Bound to firing projectile action
   winSound = loadSound("win.mp3");
 }
 
@@ -100,6 +109,7 @@ function preload() {
 function setup() {
   createCanvas(800, 450);
 
+  // Build out obstacles array from the JSON layout properties
   if (
     obstacleData &&
     obstacleData.obstacles &&
@@ -113,12 +123,6 @@ function setup() {
         size: o.size || 50,
       });
     }
-  } else {
-    obstacles = [
-      { x: 200, worldY: -300, size: 50 },
-      { x: 600, worldY: -700, size: 60 },
-      { x: 400, worldY: -1200, size: 50 },
-    ];
   }
 }
 
@@ -126,7 +130,7 @@ function setup() {
 // draw()
 // ============================================================
 function draw() {
-  background(20, 20, 30);
+  background(15, 15, 25);
 
   if (gameState === STATE_START) {
     drawStartScreen();
@@ -156,6 +160,7 @@ function draw() {
 }
 
 function drawStartScreen() {
+  background(20, 20, 35);
   fill(150, 100, 220);
   textAlign(CENTER, CENTER);
   textSize(36);
@@ -164,7 +169,7 @@ function drawStartScreen() {
   fill(255);
   textSize(18);
   text(
-    "Click Anywhere on the Canvas to Start the Night!",
+    "Click Anywhere on Canvas to Start the Night!",
     width / 2,
     height / 2 + 10,
   );
@@ -184,7 +189,7 @@ function mousePressed() {
         music.loop();
         music.setVolume(0.3);
       } catch (e) {
-        console.log("Audio session ongoing.");
+        console.log("Audio Context initialized cleanly.");
       }
     }
   }
@@ -201,11 +206,6 @@ function drawBackground() {
     let bgY = (scrollY * 0.5) % height;
     image(bgImage, 0, bgY, width, height);
     image(bgImage, 0, bgY - height, width, height);
-  } else {
-    stroke(40, 40, 60);
-    for (let i = 0; i < height; i += 40) {
-      line(0, i + (scrollY % 40), width, i + (scrollY % 40));
-    }
   }
 
   stroke(255, 255, 255, 20);
@@ -274,7 +274,7 @@ function checkObstaclePlayerCollision() {
 
       if (player.health <= 0) {
         gameState = STATE_OVER;
-        if (music && typeof music.stop === "function") music.stop();
+        if (music) music.stop();
       }
       break;
     }
@@ -324,7 +324,7 @@ function handleInput() {
       vy: player.direction.y * BULLET_SPEED,
     });
     player.shootTimer = SHOOT_COOLDOWN;
-    if (shootSound && typeof shootSound.play === "function") shootSound.play();
+    if (shootSound) shootSound.play();
   }
 }
 
@@ -397,6 +397,9 @@ function checkBulletEnemyCollisions() {
   }
 }
 
+// ------------------------------------------------------------
+// STATE HANDLING & COLLISION LOOPS
+// ------------------------------------------------------------
 function checkEnemyPlayerCollision() {
   if (player.invincible) return;
 
@@ -409,7 +412,7 @@ function checkEnemyPlayerCollision() {
 
       if (player.health <= 0) {
         gameState = STATE_OVER;
-        if (music && typeof music.stop === "function") music.stop();
+        if (music) music.stop();
       }
       break;
     }
@@ -428,8 +431,8 @@ function updateInvincibility() {
 function checkLevelComplete() {
   if (scrollY >= WORLD_LENGTH) {
     gameState = STATE_WIN;
-    if (winSound && typeof winSound.play === "function") winSound.play();
-    if (music && typeof music.stop === "function") music.stop();
+    if (winSound) winSound.play();
+    if (music) music.stop();
   }
 }
 
@@ -554,6 +557,9 @@ function drawWinScreen() {
   text("Press R to start a new night", width / 2, height / 2 + 55);
 }
 
+// ------------------------------------------------------------
+// END CONTEXTS
+// ------------------------------------------------------------
 function drawGameOver() {
   background(25, 10, 10);
   fill(220, 60, 60);
@@ -584,6 +590,6 @@ function keyPressed() {
     player.y = 370;
     player.health = player.maxHealth;
     player.invincible = false;
-    if (music && typeof music.loop === "function") music.loop();
+    if (music) music.loop();
   }
 }
